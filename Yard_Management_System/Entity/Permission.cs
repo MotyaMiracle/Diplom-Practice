@@ -2,11 +2,23 @@
 
 namespace Yard_Management_System.Entity
 {
-    public class Permission
+    public enum Permissions
     {
-        public Guid PermissionId { get; set; }
-        public string Name { get; set; } = "";
-        public bool Access { get; set; }
-        public List<PermissionRole> PermissionRoles { get; set; } = new();
-    }
+        /// <summary>
+        /// Просмотр пользователей
+        /// </summary>
+        Read = 0,
+        /// <summary>
+        /// Создание пользователей
+        /// </summary>
+        Create = 1,
+        /// <summary>
+        /// Удаление пользователей
+        /// </summary>
+        Delete = 2,
+        /// <summary>
+        /// Редактирование информации о пользователях
+        /// </summary>
+        Update = 3 
+    }  
 }
