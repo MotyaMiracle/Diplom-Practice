@@ -2,19 +2,51 @@
 using FluentValidation;
 using System.IdentityModel.Tokens.Jwt;
 using Serilog;
+using System.ComponentModel.DataAnnotations.Schema;
+using Yard_Management_System.Models;
 
 namespace Yard_Management_System
 {
     public class ApplicationContext : DbContext
     {
-        public ApplicationContext()
+        public DbSet<User> Users { get; set; }
+        public DbSet<Role> Roles { get; set; }
+        public ApplicationContext(DbContextOptions<ApplicationContext> options) 
+            : base(options)
         {
-            Database.EnsureDeleted();
+            //Database.EnsureDeleted();
             Database.EnsureCreated();
         }
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=yms_db;Username=postgres;Password=322228");
+            modelBuilder.Entity<User>().HasIndex(u => new { u.Login, u.Email }).IsUnique();
+
+            Role admin = new Role { Id = Guid.NewGuid(), Name = "Admin" };
+            Role user = new Role { Id = Guid.NewGuid(), Name = "User" };
+            modelBuilder.Entity<Role>().HasData(admin, user);
+
+            User tom = new User
+            {
+                Id = Guid.NewGuid(),
+                Login = "tom123",
+                Email = "tom@gmail.com",
+                Password = "12345",
+                IsActive = false,
+                PhoneNumber = "89169436523",
+                RoleId = admin.Id
+            };
+            User alice = new User
+            {
+                Id = Guid.NewGuid(),
+                Login = "alice321",
+                Email = "alice@gmail.com",
+                Password = "54321",
+                IsActive = false,
+                PhoneNumber = "89267434513",
+                RoleId = user.Id
+            };
+            modelBuilder.Entity<User>().HasData(tom, alice);
         }
     }
 }
