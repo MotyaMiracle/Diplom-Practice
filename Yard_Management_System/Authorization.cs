@@ -49,13 +49,7 @@ namespace Yard_Management_System
 
         public static string GetHash(string password)
         {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] hashValue = sha256.ComputeHash(Encoding.ASCII.GetBytes(password));
-                var passwordHash = Encoding.ASCII.GetString(hashValue);
-                return passwordHash;
-            }
-           
+            return Convert.ToBase64String(new SHA256Managed().ComputeHash(Encoding.UTF8.GetBytes(password)));
         }
     }
 }

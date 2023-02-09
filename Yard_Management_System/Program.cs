@@ -30,7 +30,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero
         };
     });
-
+builder.Services.AddControllers();
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("OnlyForAdmin", policy =>
@@ -41,14 +41,17 @@ builder.Services.AddAuthorization(options =>
 var app = builder.Build();
 
 
+
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseEndpoints(endpoints => endpoints.MapControllers());
 
 
-app.MapGet("/", () => Results.Redirect("/login"));
+app.MapGet("/", () => Results.Redirect("api/login"));
 
 
-app.MapGet("/login", async (HttpContext context) =>
+app.MapGet("api/login", async (HttpContext context) =>
 {
     context.Response.ContentType = "text/html; charset=utf-8";
     // html-форма дл€ ввода логина/парол€
@@ -74,49 +77,6 @@ app.MapGet("/login", async (HttpContext context) =>
     </body>
     </html>";
     await context.Response.WriteAsync(loginForm);
-});
-
-
-app.MapPost("/login", async (string? returnUrl, HttpContext context, ApplicationContext db) =>
-{
-    var form = context.Request.Form;
-
-    if (!form.ContainsKey("login") || !form.ContainsKey("password"))
-        return Results.BadRequest("Login и/или пароль не установлены");
-
-    string login = form["login"];
-    string password = form["password"];
-
-    var user = await db.Users.Include(u => u.Role).FirstOrDefaultAsync(p => p.Login == login && p.Password == password);
-    if (user is null) return Results.Unauthorized();
-    //  остыль чтобы задать хешированный пароль, а то при HasData не получалось
-    if (user.PasswordHash == null)
-    {
-        user.PasswordHash = Authorization.GetHash(user.Password);
-        await db.SaveChangesAsync();
-    }
-    var identity = Authorization.GetIdentity(user);
-    var claims = identity.Claims.ToList();
-    var encodedJwt = Authorization.GenerateJwtToken(claims, TimeSpan.FromDays(7));
-    var claimsPrincipal = new ClaimsPrincipal(identity);
-    var response = new
-    {
-        userRole = user.Role?.Name,
-        Token = encodedJwt
-    };
-    return Results.Json(response);
-});
-
-
-app.MapGet("/admin/users", [Authorize(Policy = "OnlyForAdmin")] async (ApplicationContext db, HttpContext context) =>
-{
-    var users = await db.Users.Include(u => u.Role).ToListAsync();
-    string usersToString = "";
-    foreach(var u in users)
-    {
-        usersToString = $"{usersToString}\nLogin: {u.Login}, Email: {u.Email}, Role: {u.Role?.Name}, HashPassword: {u.PasswordHash}";
-    }
-    return Results.Content(usersToString);
 });
 
 app.Run();
